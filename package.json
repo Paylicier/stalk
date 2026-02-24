@@ -1,0 +1,13 @@
+{
+  "name": "locapi",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "wrangler dev --ip 0.0.0.0",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240502.0",
+    "typescript": "^5.4.5",
+    "wrangler": "^3.53.1"
+  }
+}

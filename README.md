@@ -1,6 +1,11 @@
-# locapi
-
+<div align="center">
+<br>
+  <img src="https://cdn.hackclub.com/019c91f7-1a67-733a-9a6d-da0d5367b76a/image.png" alt="Packt Logo" width="400"/>
+  
+  # Stalk 
+  
 A Cloudflare Worker that tracks your location, resolves it to points of interest (POIs) using OpenStreetMap, or maps it to defined "hidden zones" (like Home or Work) and serve it via an api.
+</div>
 
 ## Setup
 

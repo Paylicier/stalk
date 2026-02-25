@@ -81,12 +81,27 @@ async function getPOIsFromOSM(lat: number, lon: number): Promise<Array<{ name: s
         });
 }
 
+async function getAdressFromCoords(lat: number, lon: number): Promise<{ city: string, country: string } | null> {
+    const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
+    try {
+        const response = await fetch(nominatimUrl);
+        const data = await response.json();
+        return {
+            city: data.address.city || data.address.town || data.address.village || '',
+            country: data.address.country || ''
+        };
+    } catch (error) {
+        console.error('Error fetching address from coordinates:', error);
+        return null;
+    }    
+}
+
 export default {
     async fetch(request, env, ctx): Promise<Response> {
         if (request.method === 'POST') {
             const body = await request.json();
             if (!body || body._type !== 'location') return new Response('[]');
-            const { lat, lon, batt } = body;
+            const { lat, lon, batt, bs } = body;
 
             const HIDDEN_ZONES_ARRAY = JSON.parse(env.HIDDEN_ZONES) as Array<{ name: string, lat: number, lon: number, radius: number }>;
             const zone = HIDDEN_ZONES_ARRAY.find(zone => {
@@ -94,22 +109,25 @@ export default {
                 return distance <= zone.radius;
             });
 
-            console.log(`Received location update: lat=${lat}, lon=${lon}, batt=${batt}`);
+            console.log(`Received location update: lat=${lat}, lon=${lon}, batt=${batt}, bs=${bs}`);
             console.log(`is in hidden zone: ${zone ? 'yes' : 'no'}`);
-            console.log(`battery level: ${batt}`);
+            // 0=unknown, 1=unplugged, 2=charging, 3=full
+            console.log(`battery level: ${batt}, is charging: ${bs === 2 || bs === 3 ? 'yes' : 'no'}`);
 
             if (zone) {
                 await env.LOC_KV.put(`location`, `${zone.name}`);
                 await env.LOC_KV.put(`battery`, batt);
+                await env.LOC_KV.put(`bs`, bs);
             } else {
                 const pois = await getPOIsFromOSM(lat, lon);
                 const isPoiValid = pois[0] && pois[0].distance <= 0.2;
                 const locationString = isPoiValid
                     ? `${pois[0].name} ${pois[0].city ? '(' + pois[0].city + (pois[0].country ? ', ' + pois[0].country : '') + ')' : ''}`
-                    : `unknown`;
+                    : await getAdressFromCoords(lat, lon).then(addr => addr ? `${addr.city} (${addr.country})` : 'unknown');
 
                 await env.LOC_KV.put(`location`, locationString);
                 await env.LOC_KV.put(`battery`, batt);
+                await env.LOC_KV.put(`bs`, bs);
             }
 
             return new Response("[]");
@@ -117,7 +135,8 @@ export default {
         if (request.method === 'GET') {
             return new Response(JSON.stringify({
                 location: await env.LOC_KV.get(`location`) || 'unknown',
-                battery: Number(await env.LOC_KV.get(`battery`) || 0)
+                battery: Number(await env.LOC_KV.get(`battery`) || 0),
+                batteryStatus: Number(await env.LOC_KV.get(`bs`) || 0) // 0=unknown, 1=unplugged, 2=charging, 3=full
             }), {
                 headers: {
                     'Content-Type': 'application/json'
@@ -126,4 +145,3 @@ export default {
         }
     },
 } satisfies ExportedHandler<Env>;
-

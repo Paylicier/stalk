@@ -18,6 +18,7 @@ A Cloudflare Worker that tracks your location, resolves it to points of interest
     Ensure you have a `wrangler.toml` file configured with your Cloudflare account details. You will need:
     - A KV Namespace bound as `LOC_KV`.
     - A `HIDDEN_ZONES` variable (can be set via `.dev.vars` for local development or secrets for production).
+    - `USER` and `PASS` variables for updating location
 
 3.  **Environment Variables**
     - `HIDDEN_ZONES`: A JSON string defining your private zones.
@@ -27,6 +28,8 @@ A Cloudflare Worker that tracks your location, resolves it to points of interest
         { "name": "Office", "lat": 44.380642140432165, "lon": -73.22706310693646, "radius": 0.2 }
       ]
       ```
+    - `USER`: Username (HTTP basic auth)
+    - `PASS`: Password (HTTP basic auth)
 
 ## Development
 
@@ -53,11 +56,13 @@ Send a JSON payload to the worker root:
 ```http
 POST /
 Content-Type: application/json
+Headers: Authorization: U3RhclRoaXNSZXBvUHdlYXNlOlN1cGVyU2VjcmV0UGFzc3dvcmQ=
 
 {
-  "lat": 48.8566,
-  "lon": 2.3522,
-  "batt": 85
+  "lat": 48.8579,
+  "lon": 2.2948,
+  "batt": 85,
+  "bs": 1
 }
 ```
 
@@ -75,6 +80,7 @@ GET /
 ```json
 {
   "location": "Eiffel Tower (Paris, France)",
-  "battery": 85
+  "battery": 85,
+  "batteryStatus": 1
 }
 ```

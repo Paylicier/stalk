@@ -2,6 +2,8 @@
 export interface Env {
     HIDDEN_ZONES: string;
     LOC_KV: KVNamespace;
+    USER: string;
+    PASS: string;
 }
 
 /**
@@ -100,6 +102,17 @@ export default {
     async fetch(request, env, ctx): Promise<Response> {
         if (request.method === 'POST') {
             const body = await request.json();
+
+            // auth
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Basic ')) {
+                return new Response('Unauthorized', { status: 401 });
+            }
+
+            if (authHeader !== `Basic ${btoa(`${env.USER}:${env.PASS}`)}`) {
+                return new Response('Unauthorized', { status: 401 });
+            }
+
             if (!body || body._type !== 'location') return new Response('[]');
             const { lat, lon, batt, bs } = body;
 

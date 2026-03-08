@@ -19,6 +19,9 @@ HIDDEN_ZONES = """
     }
 ]"""
 
+USER = "user"
+PASS = "pass"
+
 [[kv_namespaces]]
 binding = "LOC_KV"
 id = "CHANGE_ME"

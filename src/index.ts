@@ -93,7 +93,7 @@ async function getAdressFromCoords(lat: number, lon: number): Promise<{ city: st
     } catch (error) {
         console.error('Error fetching address from coordinates:', error);
         return null;
-    }    
+    }
 }
 
 export default {
@@ -114,10 +114,18 @@ export default {
             // 0=unknown, 1=unplugged, 2=charging, 3=full
             console.log(`battery level: ${batt}, is charging: ${bs === 2 || bs === 3 ? 'yes' : 'no'}`);
 
+            const dbLoc = await env.LOC_KV.get(`location`);
+            const dbBatt = await env.LOC_KV.get(`battery`);
+            const dbBs = await env.LOC_KV.get(`bs`);
+
             if (zone) {
-                await env.LOC_KV.put(`location`, `${zone.name}`);
-                await env.LOC_KV.put(`battery`, batt);
-                await env.LOC_KV.put(`bs`, bs);
+                if (dbLoc !== zone.name) {
+                    await env.LOC_KV.put(`location`, `${zone.name}`);
+                } if (dbBatt !== String(batt)) {
+                    await env.LOC_KV.put(`battery`, batt);
+                } if (dbBs !== String(bs)) {
+                    await env.LOC_KV.put(`bs`, bs);
+                }
             } else {
                 const pois = await getPOIsFromOSM(lat, lon);
                 const isPoiValid = pois[0] && pois[0].distance <= 0.2;
@@ -125,9 +133,13 @@ export default {
                     ? `${pois[0].name} ${pois[0].city ? '(' + pois[0].city + (pois[0].country ? ', ' + pois[0].country : '') + ')' : ''}`
                     : await getAdressFromCoords(lat, lon).then(addr => addr ? `${addr.city} (${addr.country})` : 'unknown');
 
-                await env.LOC_KV.put(`location`, locationString);
-                await env.LOC_KV.put(`battery`, batt);
-                await env.LOC_KV.put(`bs`, bs);
+                if (dbLoc !== locationString) {
+                    await env.LOC_KV.put(`location`, locationString);
+                } if (dbBatt !== String(batt)) {
+                    await env.LOC_KV.put(`battery`, batt);
+                } if (dbBs !== String(bs)) {
+                    await env.LOC_KV.put(`bs`, bs);
+                }
             }
 
             return new Response("[]");
